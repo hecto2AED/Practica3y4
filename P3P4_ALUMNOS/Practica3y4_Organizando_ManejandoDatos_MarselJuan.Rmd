@@ -376,6 +376,11 @@ load("./data/VuelosNY.Rdata")
 Muestra las primeras muestras de ambos data frames para hacerte una idea de las variables que contienen. ¿Qué diferencia existe entre la información mostrada en ambos data frames?
 
 ```{r }
+rm(list = ls())
+library(dplyr)
+load("data/VuelosNY.Rdata")
+
+#Uno contiene información sobre los vuelos y el otro sobre los propios aviones de dichos vuelos, se pueden relacionar con la columna tailum.
 
 ```
 
@@ -386,8 +391,14 @@ En nuestro estudio queremos aplicar una serie de criterios de exclusión sobre l
 * Nota: Revisar el uso de la función filter vista en clase y tener en cuenta los operadores de comparación: igual ==, distinto !=, mayor >, mayor o igual >=, menor <, menor o igual <=.
 
 ```{r }
+rm(list = ls())
+library(dplyr)
+load("data/VuelosNY.Rdata")
 
-
+planes.f <- planes %>%
+  filter(!str_detect(toupper(manufacturer), "MCDONELL DOUGLAS")) %>% # aquí lo que hacemos es pillar todos los macdonel y descartarlos, coger todo menos eso
+  filter(seats >= 90, seats <= 210) %>%
+  mutate(manufacturer = ifelse(str_detect(toupper(manufacturer), "AIRBUS"), "AIRBUS COMP", manufacturer))
 
 ```
 
@@ -398,6 +409,8 @@ Crea un data frame denominado `flights.f` que contenga los vuelos que involucren
 
 ```{r }
 
+flights.f <- flights %>%
+  inner_join(planes.f, by = "tailnum")
 
 ```
 
@@ -406,6 +419,9 @@ Crea un data frame denominado `flights.f` que contenga los vuelos que involucren
 Reasigna los nombres de los data frames `planes.f` y `flights.f` a los nombres originales  `planes` y `flights`.
 
 ```{r }
+
+planes <- planes.f
+flights <- flights.f
 
 ```
 
@@ -419,6 +435,12 @@ Existen variables que, a priori, no tienen demasiado interés para el estudio qu
 
 ```{r }
 
+flights <- flights %>%
+  select(-time_hour, -ends_with("time"))
+
+planes <- planes %>%
+  select(-speed, -type)
+
 ```
 
 ### Ejercicio 10
@@ -427,6 +449,13 @@ Incorpora una nueva variable a `flights` denominado `Full_Date` que sea de tipo 
 
 ```{r }
 
+flights <- flights %>%
+  mutate(
+    Full_Date = paste(day, month, year.x, sep = "-")
+  ) %>%
+  select(
+    -day, -month, -year.x
+  )
 
 ```
 
@@ -435,6 +464,18 @@ Incorpora una nueva variable a `flights` denominado `Full_Date` que sea de tipo 
 Utilizando las funciones `group_by`, `summarise` y `filter`, crea un data frame donde se calcule el número de vuelos (`Num_flights`), la distancia media recorrida (`Mean_distance`) y la distancia total recorrida (`Total_distance`) para cada uno de los aviones (`tailnum`) presentes en el conjunto `flights`. Descarta aquellos registros del data frame en los que la variable `tailnum` tenga un valor NA. Utiliza el operador pipe para enlazar las funciones. Almacena el data frame en una variable denominada `Distances_plane`.  
 
 ```{r }
+
+Distances_plane <- flights %>%
+  filter(!is.na(tailnum)) %>%
+  group_by(
+    tailnum
+  ) %>%
+  summarise(
+    Mean_distance = mean(distance, na.rm = T),
+    Total_distance = sum(distance, na.rm = T),
+    Num_flights = n()
+  ) 
+  
 
 ```
 
